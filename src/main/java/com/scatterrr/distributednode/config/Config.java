@@ -6,5 +6,5 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class Config {
-    public static final String CHUNK_DIRECTORY = "C:\\Users\\Jithmi\\Desktop\\ChunkData\\";
+    public static final String CHUNK_DIRECTORY = System.getProperty("user.dir") + "/ChunkData/";
 }
