@@ -11,8 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 @RestController
 @RequiredArgsConstructor
@@ -39,8 +39,8 @@ public class NodeController {
             @RequestPart("merkleRootHash") String merkleRootHash,
             @RequestPart("nextNode") String nextNode,
             @RequestPart("prevHash") String prevHash
-            // more request body parts
-    ) throws Exception{
+    // more request body parts
+    ) throws Exception {
         log.info("""
                 Received upload request with the data\s
                 filename {}\s
@@ -48,7 +48,8 @@ public class NodeController {
                 nextNode {}\s
                 prevHash {}""", fileName, merkleRootHash, nextNode, prevHash);
 
-        // TODO: Save the chunk in fileSystem
+        // Save the chunk in fileSystem
+        saveChunkToFileSystem(chunk, chunkId, fileName);
 
         if (chunkSavedSuccessfully(chunk, chunkId)) {
             // TODO: Save metadata of the chunk
@@ -58,6 +59,19 @@ public class NodeController {
         } else {
             // Return error message
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // Save chunks in the file system
+    private void saveChunkToFileSystem(byte[] chunk, String chunkId, String fileName) {
+        try {
+            // The file path to save the chunk
+            String filePath = "/path/to/the/directory/" + chunkId + '_' + fileName;
+            FileOutputStream fos = new FileOutputStream(filePath);
+            fos.write(chunk);
+            fos.close();
+        } catch (IOException e) {
+            log.error("Failed to save chunk to file system: {}", e.getMessage());
         }
     }
 
@@ -72,8 +86,7 @@ public class NodeController {
     @PostMapping("retrieve")
     public ResponseEntity<RetrieveResponse> retrieveFile(
             @RequestPart("chunkId") String chunkId,
-            @RequestPart("fileName") String fileName
-    ) {
+            @RequestPart("fileName") String fileName) {
         // search for the chunkID in db, get the chunk from fileSystem
         // send Dummy response for now
         byte[] dummy = new byte[10];
@@ -81,8 +94,7 @@ public class NodeController {
                 HttpStatus.OK.value(),
                 "SAMPLE_NEXT_NODE",
                 "SAMPLE_PREV_HASH",
-                dummy
-        ));
+                dummy));
     }
 }
 
