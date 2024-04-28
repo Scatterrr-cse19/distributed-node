@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import static com.scatterrr.distributednode.config.Config.CHUNK_DIRECTORY;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -66,7 +67,7 @@ public class NodeController {
     private void saveChunkToFileSystem(byte[] chunk, String chunkId, String fileName) {
         try {
             // The file path to save the chunk
-            String filePath = "/path/to/the/directory/" + chunkId + '_' + fileName;
+            String filePath = CHUNK_DIRECTORY + chunkId + '_' + fileName;
             FileOutputStream fos = new FileOutputStream(filePath);
             fos.write(chunk);
             fos.close();
