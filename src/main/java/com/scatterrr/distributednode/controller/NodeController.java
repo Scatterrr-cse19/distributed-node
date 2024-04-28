@@ -67,6 +67,21 @@ public class NodeController {
         return true;
     }
 
+    @PostMapping("retrieve")
+    public ResponseEntity<RetrieveResponse> retrieveFile(
+            @RequestPart("chunkId") String chunkId,
+            @RequestPart("fileName") String fileName
+    ) {
+        // search for the chunkID in db, get the chunk from fileSystem
+        // send Dummy response for now
+        byte[] dummy = new byte[10];
+        return ResponseEntity.ok(new RetrieveResponse(
+                HttpStatus.OK.value(),
+                "SAMPLE_NEXT_NODE",
+                "SAMPLE_PREV_HASH",
+                dummy
+        ));
+    }
 }
 
 // Class to hold upload response data
@@ -77,5 +92,19 @@ class UploadResponse {
     public UploadResponse(int statusCode, String message) {
         this.statusCode = statusCode;
         this.message = message;
+    }
+}
+
+class RetrieveResponse {
+    private final int statusCode;
+    private final String nextNode;
+    private final String prevHash;
+    private final byte[] chunk;
+
+    public RetrieveResponse(int statusCode, String nextNode, String prevHash, byte[] chunk) {
+        this.statusCode = statusCode;
+        this.nextNode = nextNode;
+        this.prevHash = prevHash;
+        this.chunk = chunk;
     }
 }
