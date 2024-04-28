@@ -34,3 +34,6 @@ build/
 
 # ChunkData folder
 ChunkData/
+
+# Chunk Metadata folders
+node-*-metadata.db
