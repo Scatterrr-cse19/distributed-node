@@ -3,6 +3,7 @@ package com.scatterrr.distributednode.controller;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +15,8 @@ import static com.scatterrr.distributednode.config.Config.CHUNK_DIRECTORY;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 @RestController
 @RequiredArgsConstructor
@@ -48,15 +51,19 @@ public class NodeController {
                 merkleRootHash {}\s
                 nextNode {}\s
                 prevHash {}""", fileName, merkleRootHash, nextNode, prevHash);
-
+        
         // Save the chunk in fileSystem
-        saveChunkToFileSystem(chunk, chunkId, fileName);
-
-        if (chunkSavedSuccessfully(chunk, chunkId)) {
-            // TODO: Save metadata of the chunk
+        if (saveChunkToFileSystem(chunk, chunkId, fileName)) {
+            // Save metadata of the chunk
+            String filePath = CHUNK_DIRECTORY + chunkId + '_' + fileName;
+            ChunkMetadataRecord metadataRecord = new ChunkMetadataRecord(
+                    chunkId, fileName, merkleRootHash, nextNode, prevHash, filePath
+            );
+            // TODO: Save metadataRecord in the database
 
             // Return success message with hash
-            return ResponseEntity.ok(new UploadResponse(HttpStatus.OK.value(), "SAMPLE_HASH"));
+            String metadataRecordHash = sha256(metadataRecord.toString());
+            return ResponseEntity.ok(new UploadResponse(HttpStatus.OK.value(), metadataRecordHash));
         } else {
             // Return error message
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
@@ -64,24 +71,26 @@ public class NodeController {
     }
 
     // Save chunks in the file system
-    private void saveChunkToFileSystem(byte[] chunk, String chunkId, String fileName) {
+    private boolean saveChunkToFileSystem(byte[] chunk, String chunkId, String fileName) {
         try {
             // The file path to save the chunk
             String filePath = CHUNK_DIRECTORY + chunkId + '_' + fileName;
             FileOutputStream fos = new FileOutputStream(filePath);
             fos.write(chunk);
             fos.close();
+            return true;
         } catch (IOException e) {
             log.error("Failed to save chunk to file system: {}", e.getMessage());
+            return false;
         }
     }
 
-    // Check if chunk saving was successful
-    private boolean chunkSavedSuccessfully(byte[] chunk, String chunkId) {
-        // TODO
-        // Check whether the chunk with the chunkID is correctly stored in fileSystem
-        // DUMMY RETURN TRUE
-        return true;
+    // Hash the metadata record
+    private String sha256(String original) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(original.getBytes());
+        byte[] digest = md.digest();
+        return Hex.encodeHexString(digest);
     }
 
     @PostMapping("retrieve")
@@ -114,4 +123,15 @@ class RetrieveResponse {
     private final String nextNode;
     private final String prevHash;
     private final byte[] chunk;
+}
+
+@Data
+@AllArgsConstructor
+class ChunkMetadataRecord {
+    private final String chunkId;
+    private final String fileName;
+    private final String merkleRootHash;
+    private final String nextNode;
+    private final String prevHash;
+    private final String storedPath;
 }
