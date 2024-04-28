@@ -1,7 +1,6 @@
 package com.scatterrr.distributednode.controller;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import com.scatterrr.distributednode.repository.NodeRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
@@ -12,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import static com.scatterrr.distributednode.config.Config.CHUNK_DIRECTORY;
+import com.scatterrr.distributednode.model.ChunkMetadata;
+import com.scatterrr.distributednode.dto.RetrieveResponse;
+import com.scatterrr.distributednode.dto.UploadResponse;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -26,6 +28,7 @@ public class NodeController {
     private static final Logger log = LoggerFactory.getLogger(NodeController.class);
     @Value("${eureka.client.serviceUrl.defaultZone}")
     private String eurekaServerUrl;
+    private final NodeRepository nodeRepository;
 
     @GetMapping("/server-url")
     @ResponseStatus(HttpStatus.OK)
@@ -48,18 +51,26 @@ public class NodeController {
         log.info("""
                 Received upload request with the data\s
                 filename {}\s
+                chunkId {}\s
                 merkleRootHash {}\s
                 nextNode {}\s
-                prevHash {}""", fileName, merkleRootHash, nextNode, prevHash);
+                prevHash {}""", fileName, chunkId, merkleRootHash, nextNode, prevHash);
         
         // Save the chunk in fileSystem
         if (saveChunkToFileSystem(chunk, chunkId, fileName)) {
             // Save metadata of the chunk
             String filePath = CHUNK_DIRECTORY + chunkId + '_' + fileName;
-            ChunkMetadataRecord metadataRecord = new ChunkMetadataRecord(
-                    chunkId, fileName, merkleRootHash, nextNode, prevHash, filePath
-            );
-            // TODO: Save metadataRecord in the database
+            ChunkMetadata metadataRecord = ChunkMetadata.builder()
+                    .chunkId(chunkId)
+                    .fileName(fileName)
+                    .merkleRootHash(merkleRootHash)
+                    .nextNode(nextNode)
+                    .prevHash(prevHash)
+                    .storedPath(filePath)
+                    .build();
+
+            // Save metadataRecord in the database
+            nodeRepository.save(metadataRecord);
 
             // Return success message with hash
             String metadataRecordHash = sha256(metadataRecord.toString());
@@ -106,32 +117,4 @@ public class NodeController {
                 "SAMPLE_PREV_HASH",
                 dummy));
     }
-}
-
-// Class to hold upload response data
-@Data
-@AllArgsConstructor
-class UploadResponse {
-    private final int statusCode;
-    private final String message;
-}
-
-@Data
-@AllArgsConstructor
-class RetrieveResponse {
-    private final int statusCode;
-    private final String nextNode;
-    private final String prevHash;
-    private final byte[] chunk;
-}
-
-@Data
-@AllArgsConstructor
-class ChunkMetadataRecord {
-    private final String chunkId;
-    private final String fileName;
-    private final String merkleRootHash;
-    private final String nextNode;
-    private final String prevHash;
-    private final String storedPath;
 }
