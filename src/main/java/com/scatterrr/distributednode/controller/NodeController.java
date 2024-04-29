@@ -15,6 +15,7 @@ import com.scatterrr.distributednode.model.ChunkMetadata;
 import com.scatterrr.distributednode.dto.RetrieveResponse;
 import com.scatterrr.distributednode.dto.UploadResponse;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -96,6 +97,19 @@ public class NodeController {
         }
     }
 
+    // Retrieve chunk from the file system given the path
+    private byte[] retrieveChunkFromFileSystem(String path) {
+        try {
+            FileInputStream fis = new FileInputStream(path);
+            byte[] chunk = fis.readAllBytes();
+            fis.close();
+            return chunk;
+        } catch (IOException e) {
+            log.error("Failed to retrieve chunk from file system: {}", e.getMessage());
+            return null;
+        }
+    }
+
     // Hash the metadata record
     private String sha256(String original) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -118,15 +132,13 @@ public class NodeController {
         log.info("Metadata record found: {}", metadata.toString());
 
         // get the chunk from fileSystem
-        // TODO: Implement getChunkFromFileSystem method (use metadata.getStoredPath())
-        // send Dummy chunk for now
-        byte[] dummy = new byte[10];
-
+        byte[] chunk = retrieveChunkFromFileSystem(metadata.getStoredPath() + chunkId + '_' + fileName);
+        System.out.println(metadata.getStoredPath()); // REMOVE THIS - just added to check the path
 
         return ResponseEntity.ok(new RetrieveResponse(
                 HttpStatus.OK.value(),
                 metadata.getNextNode(),
                 metadata.getPrevHash(),
-                dummy));
+                chunk));
     }
 }
