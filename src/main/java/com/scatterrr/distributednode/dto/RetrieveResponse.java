@@ -15,4 +15,5 @@ public class RetrieveResponse {
     private String nextNode;
     private String prevHash;
     private byte[] chunk;
+    private String metadataRecord;
 }

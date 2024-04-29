@@ -56,7 +56,7 @@ public class NodeController {
                 merkleRootHash {}\s
                 nextNode {}\s
                 prevHash {}""", fileName, chunkId, merkleRootHash, nextNode, prevHash);
-        
+
         // Save the chunk in fileSystem
         if (saveChunkToFileSystem(chunk, chunkId, fileName)) {
             // Save metadata of the chunk
@@ -132,13 +132,15 @@ public class NodeController {
         log.info("Metadata record found: {}", metadata.toString());
 
         // get the chunk from fileSystem
-        byte[] chunk = retrieveChunkFromFileSystem(metadata.getStoredPath() + chunkId + '_' + fileName);
+        byte[] chunk = retrieveChunkFromFileSystem(metadata.getStoredPath());
         System.out.println(metadata.getStoredPath()); // REMOVE THIS - just added to check the path
 
         return ResponseEntity.ok(new RetrieveResponse(
                 HttpStatus.OK.value(),
                 metadata.getNextNode(),
                 metadata.getPrevHash(),
-                chunk));
+                chunk,
+                metadata.toString()
+        ));
     }
 }
