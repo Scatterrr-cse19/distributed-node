@@ -108,13 +108,25 @@ public class NodeController {
     public ResponseEntity<RetrieveResponse> retrieveFile(
             @RequestPart("chunkId") String chunkId,
             @RequestPart("fileName") String fileName) {
-        // search for the chunkID in db, get the chunk from fileSystem
-        // send Dummy response for now
+
+        log.info("Received retrieve request for chunkId: {} and fileName: {}", chunkId, fileName);
+        // search for the entry with the given chunkId and fileName
+        ChunkMetadata metadata = nodeRepository.findByFileNameAndChunkId(fileName, chunkId);
+        if (metadata == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+        log.info("Metadata record found: {}", metadata.toString());
+
+        // get the chunk from fileSystem
+        // TODO: Implement getChunkFromFileSystem method (use metadata.getStoredPath())
+        // send Dummy chunk for now
         byte[] dummy = new byte[10];
+
+
         return ResponseEntity.ok(new RetrieveResponse(
                 HttpStatus.OK.value(),
-                "SAMPLE_NEXT_NODE",
-                "SAMPLE_PREV_HASH",
+                metadata.getNextNode(),
+                metadata.getPrevHash(),
                 dummy));
     }
 }
