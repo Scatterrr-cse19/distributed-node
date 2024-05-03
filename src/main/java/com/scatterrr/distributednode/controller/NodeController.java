@@ -140,7 +140,8 @@ public class NodeController {
                 metadata.getNextNode(),
                 metadata.getPrevHash(),
                 chunk,
-                metadata.toString()
+                metadata.toString(),
+                metadata.getMerkleRootHash()
         ));
     }
 }
