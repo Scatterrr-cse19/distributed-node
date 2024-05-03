@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import static com.scatterrr.distributednode.config.Config.CHUNK_DIRECTORY;
@@ -15,6 +16,7 @@ import com.scatterrr.distributednode.model.ChunkMetadata;
 import com.scatterrr.distributednode.dto.RetrieveResponse;
 import com.scatterrr.distributednode.dto.UploadResponse;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -36,6 +38,23 @@ public class NodeController {
     public String getEurekaServerUrl() {
         return StringUtils.replace(eurekaServerUrl,
                 "/eureka", "");
+    }
+
+    @DeleteMapping("/delete")
+    @Transactional
+    public void deleteChunks(@RequestParam("fileName") String fileName) {
+        log.info("Received delete request for file: {}", fileName);
+        nodeRepository.deleteByFileName(fileName);
+        // delete all chunks that have the filename in it in CHUNK_DIRECTORY
+        File directory = new File(CHUNK_DIRECTORY);
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.getName().contains(fileName)) {
+                    file.delete();
+                }
+            }
+        }
     }
 
     @PostMapping("/upload")
